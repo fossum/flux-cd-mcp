@@ -85,9 +85,9 @@ export class ConnectionManager {
           throw new Error('SSH key path must point to a regular file');
         }
         
-        // Warn if permissions are too open (but still allow it)
+        // Check if permissions are too open (mode & 0o077 means group/other has some permission)
         if (stats.mode & 0o077) {
-          console.warn(`Warning: SSH key file has overly permissive permissions: ${keyPath}`);
+          throw new Error(`SSH key file has overly permissive permissions. Please set permissions to 600: chmod 600 ${keyPath}`);
         }
         
         const privateKey = await fs.promises.readFile(keyPath);
@@ -119,30 +119,29 @@ export class ConnectionManager {
     });
   }
 
-  async executeFluxCommand(command: string): Promise<string> {
+  async executeFluxCommand(args: string[]): Promise<string> {
     if (this.config.mode === 'kubeconfig') {
-      return this.executeFluxViaKubectl(command);
+      return this.executeFluxViaKubectl(args);
     } else if (this.config.mode === 'ssh') {
-      return this.executeFluxViaSSH(command);
+      return this.executeFluxViaSSH(args);
     } else {
       throw new Error(`Unknown connection mode: ${this.config.mode}`);
     }
   }
 
-  private async executeFluxViaKubectl(command: string): Promise<string> {
+  private async executeFluxViaKubectl(args: string[]): Promise<string> {
     // Execute flux command using kubectl exec or direct flux CLI
     const { execFile } = await import('child_process');
     const execFilePromise = promisify(execFile);
 
-    // Parse the command into arguments to avoid shell injection
-    const args = command.split(/\s+/).filter(arg => arg.length > 0);
-    
+    // Add kubeconfig argument if specified
+    const allArgs = [...args];
     if (this.config.kubeconfigPath) {
-      args.push(`--kubeconfig=${this.config.kubeconfigPath}`);
+      allArgs.push(`--kubeconfig=${this.config.kubeconfigPath}`);
     }
 
     try {
-      const { stdout, stderr } = await execFilePromise('flux', args);
+      const { stdout, stderr } = await execFilePromise('flux', allArgs);
       if (stderr) {
         return `${stdout}\n${stderr}`;
       }
@@ -152,13 +151,12 @@ export class ConnectionManager {
     }
   }
 
-  private async executeFluxViaSSH(command: string): Promise<string> {
+  private async executeFluxViaSSH(args: string[]): Promise<string> {
     if (!this.sshClient) {
       throw new Error('SSH client not initialized');
     }
 
-    // Parse command into args and escape each argument for shell
-    const args = command.split(/\s+/).filter(arg => arg.length > 0);
+    // Escape each argument for shell and build command
     const escapedArgs = args.map(arg => {
       // Escape single quotes and wrap in single quotes
       return `'${arg.replace(/'/g, "'\\''")}'`;

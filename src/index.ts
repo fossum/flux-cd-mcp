@@ -290,16 +290,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
       case "flux_get": {
         const { resource_type, namespace, name: resourceName } = args as any;
-        let command = `get ${resource_type}`;
+        const cmdArgs = ['get', resource_type];
         if (namespace) {
-          command += ` -n ${namespace}`;
+          cmdArgs.push('-n', namespace);
         } else {
-          command += ` -A`;
+          cmdArgs.push('-A');
         }
         if (resourceName) {
-          command += ` ${resourceName}`;
+          cmdArgs.push(resourceName);
         }
-        const output = await connectionManager.executeFluxCommand(command);
+        const output = await connectionManager.executeFluxCommand(cmdArgs);
         return {
           content: [{ type: "text", text: output }],
         };
@@ -307,14 +307,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "flux_reconcile": {
         const { resource_type, name: resourceName, namespace, with_source } = args as any;
-        let command = `reconcile ${resource_type} ${resourceName}`;
+        const cmdArgs = ['reconcile', resource_type, resourceName];
         if (namespace) {
-          command += ` -n ${namespace}`;
+          cmdArgs.push('-n', namespace);
         }
         if (with_source) {
-          command += ` --with-source`;
+          cmdArgs.push('--with-source');
         }
-        const output = await connectionManager.executeFluxCommand(command);
+        const output = await connectionManager.executeFluxCommand(cmdArgs);
         return {
           content: [{ type: "text", text: output }],
         };
@@ -322,11 +322,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "flux_suspend": {
         const { resource_type, name: resourceName, namespace } = args as any;
-        let command = `suspend ${resource_type} ${resourceName}`;
+        const cmdArgs = ['suspend', resource_type, resourceName];
         if (namespace) {
-          command += ` -n ${namespace}`;
+          cmdArgs.push('-n', namespace);
         }
-        const output = await connectionManager.executeFluxCommand(command);
+        const output = await connectionManager.executeFluxCommand(cmdArgs);
         return {
           content: [{ type: "text", text: output }],
         };
@@ -334,11 +334,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "flux_resume": {
         const { resource_type, name: resourceName, namespace } = args as any;
-        let command = `resume ${resource_type} ${resourceName}`;
+        const cmdArgs = ['resume', resource_type, resourceName];
         if (namespace) {
-          command += ` -n ${namespace}`;
+          cmdArgs.push('-n', namespace);
         }
-        const output = await connectionManager.executeFluxCommand(command);
+        const output = await connectionManager.executeFluxCommand(cmdArgs);
         return {
           content: [{ type: "text", text: output }],
         };
@@ -346,17 +346,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "flux_logs": {
         const { kind, follow, tail } = args as any;
-        let command = `logs`;
+        const cmdArgs = ['logs'];
         if (kind) {
-          command += ` --kind=${kind}`;
+          cmdArgs.push(`--kind=${kind}`);
         }
         if (follow) {
-          command += ` --follow`;
+          cmdArgs.push('--follow');
         }
         if (tail) {
-          command += ` --tail=${tail}`;
+          cmdArgs.push(`--tail=${tail}`);
         }
-        const output = await connectionManager.executeFluxCommand(command);
+        const output = await connectionManager.executeFluxCommand(cmdArgs);
         return {
           content: [{ type: "text", text: output }],
         };
@@ -364,18 +364,18 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "flux_check": {
         const { pre } = args as any;
-        let command = `check`;
+        const cmdArgs = ['check'];
         if (pre) {
-          command += ` --pre`;
+          cmdArgs.push('--pre');
         }
-        const output = await connectionManager.executeFluxCommand(command);
+        const output = await connectionManager.executeFluxCommand(cmdArgs);
         return {
           content: [{ type: "text", text: output }],
         };
       }
 
       case "flux_version": {
-        const output = await connectionManager.executeFluxCommand('version');
+        const output = await connectionManager.executeFluxCommand(['version']);
         return {
           content: [{ type: "text", text: output }],
         };
@@ -383,11 +383,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "flux_export": {
         const { resource_type, name: resourceName, namespace } = args as any;
-        let command = `export ${resource_type} ${resourceName}`;
+        const cmdArgs = ['export', resource_type, resourceName];
         if (namespace) {
-          command += ` -n ${namespace}`;
+          cmdArgs.push('-n', namespace);
         }
-        const output = await connectionManager.executeFluxCommand(command);
+        const output = await connectionManager.executeFluxCommand(cmdArgs);
         return {
           content: [{ type: "text", text: output }],
         };
@@ -395,17 +395,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case "flux_trace": {
         const { kind, name: resourceName, namespace, api_version } = args as any;
-        let command = `trace ${resourceName}`;
+        const cmdArgs = ['trace', resourceName];
         if (namespace) {
-          command += ` --namespace=${namespace}`;
+          cmdArgs.push(`--namespace=${namespace}`);
         }
         if (kind) {
-          command += ` --kind=${kind}`;
+          cmdArgs.push(`--kind=${kind}`);
         }
         if (api_version) {
-          command += ` --api-version=${api_version}`;
+          cmdArgs.push(`--api-version=${api_version}`);
         }
-        const output = await connectionManager.executeFluxCommand(command);
+        const output = await connectionManager.executeFluxCommand(cmdArgs);
         return {
           content: [{ type: "text", text: output }],
         };
