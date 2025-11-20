@@ -201,9 +201,13 @@ npm run watch
 ## Security Considerations
 
 - **SSH Mode**: Ensure SSH keys are properly secured with appropriate file permissions (600)
+  - The server validates SSH key paths and checks file permissions
+  - Only regular files are accepted as SSH keys
 - **Kubeconfig Mode**: Protect your kubeconfig file as it contains cluster access credentials
 - **Passwords**: Avoid using `FLUX_SSH_PASSWORD` in production; prefer SSH keys
 - **Permissions**: Ensure the user/service account has appropriate RBAC permissions in the cluster
+- **Command Injection Protection**: The server uses proper argument escaping to prevent command injection vulnerabilities
+- **Environment Variables**: All configuration is done via environment variables, never expose sensitive data in command-line arguments
 
 ## License
 

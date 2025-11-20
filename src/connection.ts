@@ -72,8 +72,29 @@ export class ConnectionManager {
     };
 
     if (this.config.sshPrivateKeyPath) {
-      const privateKey = await fs.promises.readFile(this.config.sshPrivateKeyPath);
-      connectConfig.privateKey = privateKey;
+      // Validate the SSH key path to prevent path traversal
+      const keyPath = path.resolve(this.config.sshPrivateKeyPath);
+      
+      // Check if file exists and is readable
+      try {
+        await fs.promises.access(keyPath, fs.constants.R_OK);
+        const stats = await fs.promises.stat(keyPath);
+        
+        // Check if it's a regular file (not a directory or special file)
+        if (!stats.isFile()) {
+          throw new Error('SSH key path must point to a regular file');
+        }
+        
+        // Warn if permissions are too open (but still allow it)
+        if (stats.mode & 0o077) {
+          console.warn(`Warning: SSH key file has overly permissive permissions: ${keyPath}`);
+        }
+        
+        const privateKey = await fs.promises.readFile(keyPath);
+        connectConfig.privateKey = privateKey;
+      } catch (error: any) {
+        throw new Error(`Failed to read SSH private key: ${error.message}`);
+      }
     } else if (this.config.sshPassword) {
       connectConfig.password = this.config.sshPassword;
     } else {
@@ -110,15 +131,18 @@ export class ConnectionManager {
 
   private async executeFluxViaKubectl(command: string): Promise<string> {
     // Execute flux command using kubectl exec or direct flux CLI
-    const { exec } = await import('child_process');
-    const execPromise = promisify(exec);
+    const { execFile } = await import('child_process');
+    const execFilePromise = promisify(execFile);
 
-    const kubeconfigArg = this.config.kubeconfigPath 
-      ? `--kubeconfig=${this.config.kubeconfigPath}` 
-      : '';
+    // Parse the command into arguments to avoid shell injection
+    const args = command.split(/\s+/).filter(arg => arg.length > 0);
+    
+    if (this.config.kubeconfigPath) {
+      args.push(`--kubeconfig=${this.config.kubeconfigPath}`);
+    }
 
     try {
-      const { stdout, stderr } = await execPromise(`flux ${command} ${kubeconfigArg}`);
+      const { stdout, stderr } = await execFilePromise('flux', args);
       if (stderr) {
         return `${stdout}\n${stderr}`;
       }
@@ -133,8 +157,16 @@ export class ConnectionManager {
       throw new Error('SSH client not initialized');
     }
 
+    // Parse command into args and escape each argument for shell
+    const args = command.split(/\s+/).filter(arg => arg.length > 0);
+    const escapedArgs = args.map(arg => {
+      // Escape single quotes and wrap in single quotes
+      return `'${arg.replace(/'/g, "'\\''")}'`;
+    });
+    const escapedCommand = `flux ${escapedArgs.join(' ')}`;
+
     return new Promise((resolve, reject) => {
-      this.sshClient!.exec(`flux ${command}`, (err, stream: ClientChannel) => {
+      this.sshClient!.exec(escapedCommand, (err, stream: ClientChannel) => {
         if (err) {
           reject(new Error(`Failed to execute command via SSH: ${err.message}`));
           return;
