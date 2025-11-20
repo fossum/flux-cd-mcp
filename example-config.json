@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "flux-cd-kubeconfig": {
+      "command": "node",
+      "args": ["/path/to/flux-cd-mcp/build/index.js"],
+      "env": {
+        "FLUX_CONNECTION_MODE": "kubeconfig",
+        "KUBECONFIG": "/home/user/.kube/config"
+      }
+    },
+    "flux-cd-ssh": {
+      "command": "node",
+      "args": ["/path/to/flux-cd-mcp/build/index.js"],
+      "env": {
+        "FLUX_CONNECTION_MODE": "ssh",
+        "FLUX_SSH_HOST": "k8s-node.example.com",
+        "FLUX_SSH_USER": "admin",
+        "FLUX_SSH_KEY_PATH": "/home/user/.ssh/id_rsa"
+      }
+    }
+  }
+}
